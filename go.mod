@@ -1,9 +1,8 @@
 module github.com/BigBoulard/go-utils
 
-go 1.18
+go 1.19
 
 require (
-	github.com/BigBoulard/bookstore_utils-go v0.0.0-20220420083348-e54481bbc3ce
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/zap v1.21.0
