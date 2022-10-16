@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/BigBoulard/bookstore_utils-go/rest_errors"
+	"github.com/go-resty/resty/v2"
 )
 
 type RestErr interface {
@@ -89,4 +92,25 @@ func NewInternalServerError(message string, err error) RestErr {
 		result.ErrCauses = append(result.ErrCauses, err.Error())
 	}
 	return result
+}
+
+func CheckRestyError(err error, resp *resty.Response, origin string) rest_errors.RestErr {
+	if err != nil { // TODO detail error scenarios here
+		return rest_errors.NewBadRequestError(
+			fmt.Sprintf("%s:%s", origin, err.Error()),
+		)
+	}
+
+	if resp.IsError() {
+		restErr, err := rest_errors.NewRestErrorFromBytes(resp.Body())
+		if err != nil {
+			return rest_errors.NewInternalServerError(
+				fmt.Sprintf("%s - resp error -:%s", origin, err.Error()),
+				err,
+			)
+		}
+		return restErr
+	}
+
+	return nil
 }
