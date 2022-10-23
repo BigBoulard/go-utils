@@ -65,6 +65,14 @@ func NewBadRequestError(message string) RestErr {
 	}
 }
 
+func NewServiceUnavailableError(message string) RestErr {
+	return restErr{
+		ErrMessage: message,
+		ErrStatus:  http.StatusServiceUnavailable,
+		ErrError:   "service_unavailable",
+	}
+}
+
 func NewNotFoundError(message string) RestErr {
 	return restErr{
 		ErrMessage: message,
