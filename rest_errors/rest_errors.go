@@ -109,7 +109,7 @@ func NewInternalServerError(message string, err error) RestErr {
 	return result
 }
 
-func CheckRestyError(err error, resp *resty.Response, origin string) RestErr {
+func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 	if err != nil { // TODO detail error scenarios here
 		return NewBadRequestError(
 			fmt.Sprintf("%s:%s", origin, err.Error()),
@@ -117,15 +117,14 @@ func CheckRestyError(err error, resp *resty.Response, origin string) RestErr {
 	}
 
 	if resp.IsError() {
-		errorS := []interface{}{}
-		errorS = append(errorS, resp.Error())
-
-		restErr := NewRestError(
-			fmt.Sprintf("%s - resp error -:%s", origin, string(resp.Body())),
-			resp.StatusCode(),
-			string(resp.Body()),
-			errorS,
-		)
+		restErr := &restErr{} // we assume that we only receive errors of type RestErr
+		marshalErr := json.Unmarshal(resp.Body(), &restErr)
+		if marshalErr != nil {
+			return NewInternalServerError(
+				fmt.Sprintf("%s - Unmarshal error: %s", origin, marshalErr.Error()),
+				marshalErr,
+			)
+		}
 		return restErr
 	}
 
