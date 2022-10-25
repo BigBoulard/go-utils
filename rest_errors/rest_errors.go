@@ -121,7 +121,7 @@ func CheckRestyError(err error, resp *resty.Response, origin string) RestErr {
 		errorS = append(errorS, resp.Error())
 
 		restErr := NewRestError(
-			fmt.Sprintf("%s - resp error -:%s", origin, resp.Error().(string)),
+			fmt.Sprintf("%s - resp error -:%s", origin, string(resp.Body())),
 			resp.StatusCode(),
 			string(resp.Body()),
 			errorS,
