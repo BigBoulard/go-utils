@@ -118,11 +118,11 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 
 	if resp.IsError() {
 		restErr := &restErr{} // we assume that we only receive errors of type RestErr
-		marshalErr := json.Unmarshal(resp.Body(), &restErr)
-		if marshalErr != nil {
+		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
+		if unmarshalErr != nil {
 			return NewInternalServerError(
-				fmt.Sprintf("%s - Unmarshal error: %s", origin, marshalErr.Error()),
-				marshalErr,
+				fmt.Sprintf("%s - Unmarshal error: %s", origin, unmarshalErr.Error()),
+				unmarshalErr,
 			)
 		}
 		return restErr
