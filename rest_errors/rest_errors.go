@@ -117,13 +117,15 @@ func CheckRestyError(err error, resp *resty.Response, origin string) RestErr {
 	}
 
 	if resp.IsError() {
-		restErr, err := NewRestErrorFromBytes(resp.Body())
-		if err != nil {
-			return NewInternalServerError(
-				fmt.Sprintf("%s - resp error -:%s", origin, err.Error()),
-				err,
-			)
-		}
+		errorS := []interface{}{}
+		errorS = append(errorS, resp.Error())
+
+		restErr := NewRestError(
+			fmt.Sprintf("%s - resp error -:%s", origin, resp.Error()),
+			resp.StatusCode(),
+			string(resp.Body()),
+			errorS,
+		)
 		return restErr
 	}
 
