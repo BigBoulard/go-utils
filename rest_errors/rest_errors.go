@@ -117,6 +117,7 @@ func CheckRestyError(err error, resp *resty.Response, origin string) RestErr {
 	}
 
 	if resp.IsError() {
+		fmt.Fprintf("%s - %+v", resp.StatusCode(), string(resp.Body()))
 		errorS := []interface{}{}
 		errorS = append(errorS, resp.Error())
 
