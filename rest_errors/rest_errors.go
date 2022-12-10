@@ -110,9 +110,10 @@ func NewInternalServerError(message string, err error) RestErr {
 }
 
 func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
-	if err != nil { // TODO detail error scenarios here
-		return NewBadRequestError(
+	if err != nil {
+		return NewInternalServerError(
 			fmt.Sprintf("%s:%s", origin, err.Error()),
+			err,
 		)
 	}
 
