@@ -2,10 +2,11 @@ package logger
 
 import (
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"os"
 	"strings"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -17,7 +18,7 @@ var (
 	log logger
 )
 
-type bookstoreLogger interface {
+type Logger interface {
 	Print(v ...interface{})
 	Printf(format string, v ...interface{})
 }
@@ -68,7 +69,7 @@ func getOutput() string {
 	return output
 }
 
-func GetLogger() bookstoreLogger {
+func GetLogger() Logger {
 	return log
 }
 
