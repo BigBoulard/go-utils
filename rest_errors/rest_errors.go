@@ -111,9 +111,8 @@ func NewInternalServerError(message string, err error) RestErr {
 
 func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 	if err != nil {
-		return NewInternalServerError(
+		return NewServiceUnavailableError(
 			fmt.Sprintf("%s:%s", origin, err.Error()),
-			err,
 		)
 	}
 
