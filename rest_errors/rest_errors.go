@@ -105,6 +105,14 @@ func NewConflictError(message string) RestErr {
 	}
 }
 
+func NewUnprocessableEntityError(message string) RestErr {
+	return restErr{
+		ErrMessage: message,
+		ErrStatus:  http.StatusUnprocessableEntity,
+		ErrError:   "Unprocessable Entity",
+	}
+}
+
 func NewInternalServerError(message string, err error) RestErr {
 	result := restErr{
 		ErrMessage: message,
