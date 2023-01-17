@@ -81,6 +81,14 @@ func NewNotFoundError(message string) RestErr {
 	}
 }
 
+func NewGoneError(message string) RestErr {
+	return restErr{
+		ErrMessage: message,
+		ErrStatus:  http.StatusGone,
+		ErrError:   "gone",
+	}
+}
+
 func NewUnauthorizedError(message string) RestErr {
 	return restErr{
 		ErrMessage: message,
