@@ -135,7 +135,7 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 	if resp.IsError() { // 404 is not detected here
 		return NewInternalServerError(
 			fmt.Sprintf("%s:%s", origin, resp.Error()),
-			resp.Error().(error),
+			nil,
 		)
 	}
 
