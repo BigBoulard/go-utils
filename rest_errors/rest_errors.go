@@ -133,7 +133,7 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 	}
 
 	if resp.StatusCode() > 399 {
-		restErr := &restErr{} // we assume that we only receive errors of type RestErr
+		restErr := &restErr{}
 		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
 		if unmarshalErr != nil {
 			return NewInternalServerError(
@@ -144,7 +144,7 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 		return restErr
 	}
 
-	if resp.IsError() { // 404 is not detected here
+	if resp.IsError() { // Network Error
 		return NewInternalServerError(
 			fmt.Sprintf("%s:%s", origin, resp.Error()),
 			nil,
