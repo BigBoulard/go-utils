@@ -13,14 +13,14 @@ type RestErr interface {
 	Message() string
 	Status() int
 	Error() string
-	Causes() []interface{}
+	Causes() []string
 }
 
 type restErr struct {
-	ErrMessage string        `json:"message"`
-	ErrStatus  int           `json:"status"`
-	ErrError   string        `json:"error"`
-	ErrCauses  []interface{} `json:"causes"`
+	ErrMessage string   `json:"message"`
+	ErrStatus  int      `json:"status"`
+	ErrError   string   `json:"error"`
+	ErrCauses  []string `json:"causes"`
 }
 
 func (e restErr) Error() string {
@@ -36,11 +36,11 @@ func (e restErr) Status() int {
 	return e.ErrStatus
 }
 
-func (e restErr) Causes() []interface{} {
+func (e restErr) Causes() []string {
 	return e.ErrCauses
 }
 
-func NewRestError(message string, status int, err string, causes []interface{}) RestErr {
+func NewRestError(message string, status int, err string, causes []string) RestErr {
 	return restErr{
 		ErrMessage: message,
 		ErrStatus:  status,
