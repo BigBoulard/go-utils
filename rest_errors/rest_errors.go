@@ -13,19 +13,19 @@ type RestErr interface {
 	Message() string
 	Status() int
 	Error() string
-	Causes() []string
+	Cause() string
 }
 
 type restErr struct {
-	ErrMessage string   `json:"message"`
-	ErrStatus  int      `json:"status"`
-	ErrError   string   `json:"error"`
-	ErrCauses  []string `json:"causes"`
+	ErrMessage string `json:"message"`
+	ErrStatus  int    `json:"status"`
+	ErrError   string `json:"error"`
+	ErrCause   string `json:"cause"`
 }
 
 func (e restErr) Error() string {
 	return fmt.Sprintf("message: %s - status: %d - error: %s - causes: %v",
-		e.ErrMessage, e.ErrStatus, e.ErrError, e.ErrCauses)
+		e.ErrMessage, e.ErrStatus, e.ErrError, e.ErrCause)
 }
 
 func (e restErr) Message() string {
@@ -36,16 +36,16 @@ func (e restErr) Status() int {
 	return e.ErrStatus
 }
 
-func (e restErr) Causes() []string {
-	return e.ErrCauses
+func (e restErr) Cause() string {
+	return e.ErrCause
 }
 
-func NewRestError(message string, status int, err string, causes []string) RestErr {
+func NewRestError(message string, status int, err string, cause string) RestErr {
 	return restErr{
 		ErrMessage: message,
 		ErrStatus:  status,
 		ErrError:   err,
-		ErrCauses:  causes,
+		ErrCause:   cause,
 	}
 }
 
@@ -120,7 +120,7 @@ func NewInternalServerError(message string, err error) RestErr {
 		ErrError:   "internal_server_error",
 	}
 	if err != nil {
-		result.ErrCauses = append(result.ErrCauses, err.Error())
+		result.ErrCause = err.Error()
 	}
 	return result
 }
