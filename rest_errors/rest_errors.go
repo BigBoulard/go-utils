@@ -133,27 +133,47 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 		)
 	}
 
-	if resp.IsError() { // Network Error
-		println("ISErrror")
-		spew.Dump(resp)
-		return NewInternalServerError(
-			fmt.Sprintf("%s:%s", origin, resp.Error()),
-			nil,
-		)
-	}
-
 	if resp.StatusCode() > 399 {
 		restErr := &restErr{}
 		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
 		if unmarshalErr != nil {
 			spew.Dump(resp)
-			println(resp.StatusCode())
-			return NewInternalServerError(
-				fmt.Sprintf("%s - Unmarshal error: %s", origin, unmarshalErr.Error()),
-				unmarshalErr,
-			)
+			switch resp.StatusCode() {
+			case http.StatusNotFound:
+				return NewNotFoundError(
+					fmt.Sprintf("Not Found: %s", origin),
+				)
+			case http.StatusUnauthorized:
+				return NewUnauthorizedError(
+					fmt.Sprintf("Unauthorized: %s", origin),
+				)
+			case http.StatusBadRequest:
+				return NewBadRequestError(
+					fmt.Sprintf("BadRequest: %s", origin),
+				)
+			case http.StatusGone:
+				return NewGoneError(
+					fmt.Sprintf("Gone: %s", origin),
+				)
+			case http.StatusConflict:
+				return NewConflictError(
+					fmt.Sprintf("Conflict: %s", origin),
+				)
+			case http.StatusServiceUnavailable:
+				return NewServiceUnavailableError(
+					fmt.Sprintf("Service Unavailable: %s", origin),
+				)
+			case http.StatusUnprocessableEntity:
+				return NewUnprocessableEntityError(
+					fmt.Sprintf("Unprocessable Entity: %s", origin),
+				)
+			default:
+				return NewInternalServerError(
+					fmt.Sprintf("%s - Unmarshal error: %s", origin, unmarshalErr.Error()),
+					unmarshalErr,
+				)
+			}
 		}
-		spew.Dump(resp)
 		return restErr
 	}
 
