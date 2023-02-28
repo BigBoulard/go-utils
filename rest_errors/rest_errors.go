@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -141,10 +142,14 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 				unmarshalErr,
 			)
 		}
+		println("StatusCode > 399")
+		spew.Dump(resp)
 		return restErr
 	}
 
 	if resp.IsError() { // Network Error
+		println("IsError")
+		spew.Dump(resp)
 		return NewInternalServerError(
 			fmt.Sprintf("%s:%s", origin, resp.Error()),
 			nil,
