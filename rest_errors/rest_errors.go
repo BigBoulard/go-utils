@@ -133,6 +133,15 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 		)
 	}
 
+	if resp.IsError() { // Network Error
+		println("ISErrror")
+		spew.Dump(resp)
+		return NewInternalServerError(
+			fmt.Sprintf("%s:%s", origin, resp.Error()),
+			nil,
+		)
+	}
+
 	if resp.StatusCode() > 399 {
 		restErr := &restErr{}
 		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
@@ -146,15 +155,6 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 		}
 		spew.Dump(resp)
 		return restErr
-	}
-
-	if resp.IsError() { // Network Error
-		println("IsError")
-		spew.Dump(resp)
-		return NewInternalServerError(
-			fmt.Sprintf("%s:%s", origin, resp.Error()),
-			nil,
-		)
 	}
 
 	return nil
