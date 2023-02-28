@@ -137,12 +137,13 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 		restErr := &restErr{}
 		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
 		if unmarshalErr != nil {
+			spew.Dump(resp)
+			println(resp.StatusCode())
 			return NewInternalServerError(
 				fmt.Sprintf("%s - Unmarshal error: %s", origin, unmarshalErr.Error()),
 				unmarshalErr,
 			)
 		}
-		println("StatusCode > 399")
 		spew.Dump(resp)
 		return restErr
 	}
