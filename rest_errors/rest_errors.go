@@ -110,7 +110,7 @@ func NewUnprocessableEntityError(message string) RestErr {
 	return restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusUnprocessableEntity,
-		ErrError:   "Unprocessable Entity",
+		ErrError:   "unprocessable_entity",
 	}
 }
 
