@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-resty/resty/v2"
@@ -14,19 +15,20 @@ type RestErr interface {
 	Message() string
 	Status() int
 	Error() string
-	Cause() string
+	Causes() string
+	AddCause(string)
 }
 
 type restErr struct {
-	ErrMessage string `json:"message"`
-	ErrStatus  int    `json:"status"`
-	ErrError   string `json:"error"`
-	ErrCause   string `json:"cause"`
+	ErrMessage string   `json:"message"`
+	ErrStatus  int      `json:"status"`
+	ErrError   string   `json:"error"`
+	ErrCauses  []string `json:"cause"`
 }
 
 func (e restErr) Error() string {
 	return fmt.Sprintf("message: %s - status: %d - error: %s - causes: %v",
-		e.ErrMessage, e.ErrStatus, e.ErrError, e.ErrCause)
+		e.ErrMessage, e.ErrStatus, e.ErrError, e.ErrCauses)
 }
 
 func (e restErr) Message() string {
@@ -37,16 +39,20 @@ func (e restErr) Status() int {
 	return e.ErrStatus
 }
 
-func (e restErr) Cause() string {
-	return e.ErrCause
+func (e restErr) Causes() string {
+	return strings.Join(e.ErrCauses, " | ")
 }
 
-func NewRestError(message string, status int, err string, cause string) RestErr {
+func (e restErr) AddCause(cause string) {
+	e.ErrCauses = prependString(e.ErrCauses, cause)
+}
+
+func NewRestError(message string, status int, err string, causes []string) RestErr {
 	return restErr{
 		ErrMessage: message,
 		ErrStatus:  status,
 		ErrError:   err,
-		ErrCause:   cause,
+		ErrCauses:  causes,
 	}
 }
 
@@ -121,9 +127,16 @@ func NewInternalServerError(message string, err error) RestErr {
 		ErrError:   "internal_server_error",
 	}
 	if err != nil {
-		result.ErrCause = err.Error()
+		result.ErrCauses = prependString(result.ErrCauses, err.Error())
 	}
 	return result
+}
+
+func prependString(x []string, y string) []string {
+	x = append(x, "")
+	copy(x[1:], x)
+	x[0] = y
+	return x
 }
 
 func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
