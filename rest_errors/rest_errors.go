@@ -26,29 +26,29 @@ type restErr struct {
 	ErrCauses  []string `json:"cause"`
 }
 
-func (e restErr) Error() string {
+func (e *restErr) Error() string {
 	return fmt.Sprintf("message: %s - status: %d - error: %s - causes: %v",
 		e.ErrMessage, e.ErrStatus, e.ErrError, e.ErrCauses)
 }
 
-func (e restErr) Message() string {
+func (e *restErr) Message() string {
 	return e.ErrMessage
 }
 
-func (e restErr) Status() int {
+func (e *restErr) Status() int {
 	return e.ErrStatus
 }
 
-func (e restErr) Causes() string {
+func (e *restErr) Causes() string {
 	return strings.Join(e.ErrCauses, " | ")
 }
 
-func (e restErr) AddCause(cause string) {
+func (e *restErr) AddCause(cause string) {
 	e.ErrCauses = prependString(e.ErrCauses, cause)
 }
 
 func NewRestError(message string, status int, err string, causes []string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  status,
 		ErrError:   err,
@@ -61,11 +61,11 @@ func NewRestErrorFromBytes(bytes []byte) (RestErr, error) {
 	if err := json.Unmarshal(bytes, &apiErr); err != nil {
 		return nil, errors.New("invalid json")
 	}
-	return apiErr, nil
+	return &apiErr, nil
 }
 
 func NewBadRequestError(message string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusBadRequest,
 		ErrError:   "bad_request",
@@ -73,7 +73,7 @@ func NewBadRequestError(message string) RestErr {
 }
 
 func NewServiceUnavailableError(message string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusServiceUnavailable,
 		ErrError:   "service_unavailable",
@@ -81,7 +81,7 @@ func NewServiceUnavailableError(message string) RestErr {
 }
 
 func NewNotFoundError(message string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusNotFound,
 		ErrError:   "not_found",
@@ -89,7 +89,7 @@ func NewNotFoundError(message string) RestErr {
 }
 
 func NewGoneError(message string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusGone,
 		ErrError:   "gone",
@@ -97,7 +97,7 @@ func NewGoneError(message string) RestErr {
 }
 
 func NewUnauthorizedError(message string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusUnauthorized,
 		ErrError:   "unauthorized",
@@ -105,7 +105,7 @@ func NewUnauthorizedError(message string) RestErr {
 }
 
 func NewConflictError(message string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusConflict,
 		ErrError:   "conflict",
@@ -113,7 +113,7 @@ func NewConflictError(message string) RestErr {
 }
 
 func NewUnprocessableEntityError(message string) RestErr {
-	return restErr{
+	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusUnprocessableEntity,
 		ErrError:   "unprocessable_entity",
@@ -121,7 +121,7 @@ func NewUnprocessableEntityError(message string) RestErr {
 }
 
 func NewInternalServerError(message string, err error) RestErr {
-	result := restErr{
+	result := &restErr{
 		ErrMessage: message,
 		ErrStatus:  http.StatusInternalServerError,
 		ErrError:   "internal_server_error",
