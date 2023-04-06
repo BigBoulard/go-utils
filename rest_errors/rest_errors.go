@@ -7,23 +7,22 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-resty/resty/v2"
 )
 
 type RestErr interface {
-	Message() string
-	Status() int
-	Error() string
-	Causes() string
+	Status() int     // HTTP status code
+	Message() string // Message returned to the client
+	Error() string   // Raw Error message
+	Causes() string  // pkg - method | pkg - method for logging purposes
 	AddCause(string)
 }
 
 type restErr struct {
-	ErrMessage string   `json:"message"`
 	ErrStatus  int      `json:"status"`
+	ErrMessage string   `json:"message"`
 	ErrError   string   `json:"error"`
-	ErrCauses  []string `json:"cause"`
+	ErrCauses  []string `json:"causes"`
 }
 
 func (e *restErr) Error() string {
@@ -150,7 +149,6 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 		restErr := &restErr{}
 		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
 		if unmarshalErr != nil {
-			spew.Dump(resp)
 			switch resp.StatusCode() {
 			case http.StatusNotFound:
 				return NewNotFoundError(
