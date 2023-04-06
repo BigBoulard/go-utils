@@ -1,8 +1,13 @@
 package rest_errors_v2
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type RestErr interface {
@@ -74,4 +79,100 @@ func NewBadRequestError(path string, message string, cause string) RestErr {
 		ErrCause:   cause,
 		ErrPath:    path,
 	}
+}
+
+func NewRestError(message string, status int, cause string) RestErr {
+	return &restErr{
+		ErrMessage: message,
+		ErrStatus:  status,
+		ErrCause:   cause,
+	}
+}
+
+func NewRestErrorFromBytes(bytes []byte) (RestErr, error) {
+	var apiErr restErr
+	if err := json.Unmarshal(bytes, &apiErr); err != nil {
+		return nil, errors.New("invalid json")
+	}
+	return &apiErr, nil
+}
+
+func NewServiceUnavailableError(path string, message string) RestErr {
+	return &restErr{
+		ErrPath:    path,
+		ErrMessage: message,
+		ErrStatus:  http.StatusServiceUnavailable,
+		ErrTitle:   "service_unavailable",
+	}
+}
+
+func NewNotFoundError(path string, message string) RestErr {
+	return &restErr{
+		ErrPath:    path,
+		ErrMessage: message,
+		ErrStatus:  http.StatusNotFound,
+		ErrTitle:   "not_found",
+	}
+}
+
+func NewGoneError(path string, message string) RestErr {
+	return &restErr{
+		ErrPath:    path,
+		ErrMessage: message,
+		ErrStatus:  http.StatusGone,
+		ErrTitle:   "gone",
+	}
+}
+
+func NewUnauthorizedError(path string, message string) RestErr {
+	return &restErr{
+		ErrPath:    path,
+		ErrMessage: message,
+		ErrStatus:  http.StatusUnauthorized,
+		ErrTitle:   "unauthorized",
+	}
+}
+
+func NewConflictError(path string, message string) RestErr {
+	return &restErr{
+		ErrPath:    path,
+		ErrMessage: message,
+		ErrStatus:  http.StatusConflict,
+		ErrTitle:   "conflict",
+	}
+}
+
+func NewUnprocessableEntityError(path string, message string) RestErr {
+	return &restErr{
+		ErrPath:    path,
+		ErrMessage: message,
+		ErrStatus:  http.StatusUnprocessableEntity,
+		ErrTitle:   "unprocessable_entity",
+	}
+}
+
+func prependString(x []string, y string) []string {
+	x = append(x, "")
+	copy(x[1:], x)
+	x[0] = y
+	return x
+}
+
+func CheckRestError(path string, err error, resp *resty.Response) RestErr {
+	if err != nil {
+		return NewServiceUnavailableError(
+			path, err.Error(),
+		)
+	}
+
+	if resp.StatusCode() > 399 {
+		restErr := &restErr{}
+		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
+		if unmarshalErr != nil {
+			NewInternalServerError(path, strconv.Itoa(resp.StatusCode()), "unmarshal error")
+		}
+		return restErr
+	}
+
+	return nil
 }
