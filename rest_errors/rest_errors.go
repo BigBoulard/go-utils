@@ -5,53 +5,87 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
+	"strconv"
 
 	"github.com/go-resty/resty/v2"
 )
 
 type RestErr interface {
 	Status() int     // HTTP status code
-	Message() string // Message returned to the client
-	Error() string   // Raw Error message
-	Causes() string  // pkg - method | pkg - method for logging purposes
-	AddCause(string)
+	Title() string   // A string representation of the Status Code
+	Path() string    // Only used for Logging: The path of the error. Ex: "controller/controllerfunc/service/servicefunc/dbclient/dblientfunc"
+	WrapPath(string) // Only used for Logging: Wrapper func to keep track of the path of the error
+	Code() string    // Only used for Logging: Raw error code
+	Message() string // Only used for Logging: Raw error message not returned to the client
+
+	Error() string // string representation of a restErr
 }
 
 type restErr struct {
-	ErrStatus  int      `json:"status"`
-	ErrMessage string   `json:"message"`
-	ErrError   string   `json:"error"`
-	ErrCauses  []string `json:"causes"`
+	ErrStatus  int    `json:"status"`          // HTTP Status Code
+	ErrTitle   string `json:"title"`           // A string representation of the Status Code
+	ErrCause   string `json:"cause,omitempty"` // The cause of the error, can be empty
+	ErrPath    string `json:"-"`               // Only used for Logging: The path of the error. Ex: "controller/controllerfunc/service/servicefunc/dbclient/dblientfunc"
+	ErrMessage string `json:"-"`               // Only used for Logging: Raw error message returned by a DB, another Servive or whatever
+	ErrCode    string `json:"-"`               // Only used for Logging: Raw error code from the DB or another service
 }
 
 func (e *restErr) Error() string {
-	return fmt.Sprintf("message: %s - status: %d - error: %s - causes: %v",
-		e.ErrMessage, e.ErrStatus, e.ErrError, e.ErrCauses)
-}
-
-func (e *restErr) Message() string {
-	return e.ErrMessage
+	return fmt.Sprintf("status: %d, title: %s, cause: %s - path: %s - message: %s",
+		e.ErrStatus, e.ErrTitle, e.ErrCause, e.ErrPath, e.ErrMessage)
 }
 
 func (e *restErr) Status() int {
 	return e.ErrStatus
 }
 
-func (e *restErr) Causes() string {
-	return strings.Join(e.ErrCauses, " | ")
+func (e *restErr) Title() string {
+	return e.ErrTitle
 }
 
-func (e *restErr) AddCause(cause string) {
-	e.ErrCauses = prependString(e.ErrCauses, cause)
+func (e *restErr) Message() string {
+	return e.ErrMessage
 }
 
-func NewRestError(message string, status int, err string, causes []string) RestErr {
+func (e *restErr) Path() string {
+	return e.ErrPath
+}
+
+func (e *restErr) Code() string {
+	return e.ErrCode
+}
+
+func (e *restErr) WrapPath(path string) {
+	e.ErrPath = fmt.Sprintf("%s%s", path, e.ErrPath)
+}
+
+// constructors
+func NewInternalServerError(path string, code string, msg string) RestErr {
+	result := &restErr{
+		ErrStatus:  http.StatusInternalServerError,
+		ErrTitle:   "internal_server_error",
+		ErrMessage: msg,
+		ErrCode:    code,
+		ErrPath:    path,
+	}
+	return result
+}
+
+func NewBadRequestError(path string, message string, cause string) RestErr {
+	return &restErr{
+		ErrStatus:  http.StatusBadRequest,
+		ErrTitle:   "bad_request",
+		ErrMessage: message,
+		ErrCause:   cause,
+		ErrPath:    path,
+	}
+}
+
+func NewRestError(message string, status int, cause string) RestErr {
 	return &restErr{
 		ErrMessage: message,
 		ErrStatus:  status,
-		ErrError:   err,
-		ErrCauses:  causes,
+		ErrCause:   cause,
 	}
 }
 
@@ -63,72 +97,58 @@ func NewRestErrorFromBytes(bytes []byte) (RestErr, error) {
 	return &apiErr, nil
 }
 
-func NewBadRequestError(message string) RestErr {
+func NewServiceUnavailableError(path string, message string) RestErr {
 	return &restErr{
-		ErrMessage: message,
-		ErrStatus:  http.StatusBadRequest,
-		ErrError:   "bad_request",
-	}
-}
-
-func NewServiceUnavailableError(message string) RestErr {
-	return &restErr{
+		ErrPath:    path,
 		ErrMessage: message,
 		ErrStatus:  http.StatusServiceUnavailable,
-		ErrError:   "service_unavailable",
+		ErrTitle:   "service_unavailable",
 	}
 }
 
-func NewNotFoundError(message string) RestErr {
+func NewNotFoundError(path string, message string) RestErr {
 	return &restErr{
+		ErrPath:    path,
 		ErrMessage: message,
 		ErrStatus:  http.StatusNotFound,
-		ErrError:   "not_found",
+		ErrTitle:   "not_found",
 	}
 }
 
-func NewGoneError(message string) RestErr {
+func NewGoneError(path string, message string) RestErr {
 	return &restErr{
+		ErrPath:    path,
 		ErrMessage: message,
 		ErrStatus:  http.StatusGone,
-		ErrError:   "gone",
+		ErrTitle:   "gone",
 	}
 }
 
-func NewUnauthorizedError(message string) RestErr {
+func NewUnauthorizedError(path string, message string) RestErr {
 	return &restErr{
+		ErrPath:    path,
 		ErrMessage: message,
 		ErrStatus:  http.StatusUnauthorized,
-		ErrError:   "unauthorized",
+		ErrTitle:   "unauthorized",
 	}
 }
 
-func NewConflictError(message string) RestErr {
+func NewConflictError(path string, message string) RestErr {
 	return &restErr{
+		ErrPath:    path,
 		ErrMessage: message,
 		ErrStatus:  http.StatusConflict,
-		ErrError:   "conflict",
+		ErrTitle:   "conflict",
 	}
 }
 
-func NewUnprocessableEntityError(message string) RestErr {
+func NewUnprocessableEntityError(path string, message string) RestErr {
 	return &restErr{
+		ErrPath:    path,
 		ErrMessage: message,
 		ErrStatus:  http.StatusUnprocessableEntity,
-		ErrError:   "unprocessable_entity",
+		ErrTitle:   "unprocessable_entity",
 	}
-}
-
-func NewInternalServerError(message string, err error) RestErr {
-	result := &restErr{
-		ErrMessage: message,
-		ErrStatus:  http.StatusInternalServerError,
-		ErrError:   "internal_server_error",
-	}
-	if err != nil {
-		result.ErrCauses = prependString(result.ErrCauses, err.Error())
-	}
-	return result
 }
 
 func prependString(x []string, y string) []string {
@@ -138,10 +158,10 @@ func prependString(x []string, y string) []string {
 	return x
 }
 
-func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
+func CheckRestError(path string, err error, resp *resty.Response) RestErr {
 	if err != nil {
 		return NewServiceUnavailableError(
-			fmt.Sprintf("%s:%s", origin, err.Error()),
+			path, err.Error(),
 		)
 	}
 
@@ -149,41 +169,7 @@ func CheckRestError(err error, resp *resty.Response, origin string) RestErr {
 		restErr := &restErr{}
 		unmarshalErr := json.Unmarshal(resp.Body(), &restErr)
 		if unmarshalErr != nil {
-			switch resp.StatusCode() {
-			case http.StatusNotFound:
-				return NewNotFoundError(
-					fmt.Sprintf("Not Found: %s", origin),
-				)
-			case http.StatusUnauthorized:
-				return NewUnauthorizedError(
-					fmt.Sprintf("Unauthorized: %s", origin),
-				)
-			case http.StatusBadRequest:
-				return NewBadRequestError(
-					fmt.Sprintf("BadRequest: %s", origin),
-				)
-			case http.StatusGone:
-				return NewGoneError(
-					fmt.Sprintf("Gone: %s", origin),
-				)
-			case http.StatusConflict:
-				return NewConflictError(
-					fmt.Sprintf("Conflict: %s", origin),
-				)
-			case http.StatusServiceUnavailable:
-				return NewServiceUnavailableError(
-					fmt.Sprintf("Service Unavailable: %s", origin),
-				)
-			case http.StatusUnprocessableEntity:
-				return NewUnprocessableEntityError(
-					fmt.Sprintf("Unprocessable Entity: %s", origin),
-				)
-			default:
-				return NewInternalServerError(
-					fmt.Sprintf("%s - Unmarshal error: %s", origin, unmarshalErr.Error()),
-					unmarshalErr,
-				)
-			}
+			NewInternalServerError(path, strconv.Itoa(resp.StatusCode()), "unmarshal error")
 		}
 		return restErr
 	}
